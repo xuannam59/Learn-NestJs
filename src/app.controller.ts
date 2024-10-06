@@ -1,12 +1,21 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Render } from '@nestjs/common';
 import { AppService } from './app.service';
+import { ConfigService } from '@nestjs/config';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private configService: ConfigService // cách sử dụng env trong controller
+  ) { }
 
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  @Render("home") // server side rendering , k được return
+  handleHomePage() {
+    const message = this.appService.getHello();
+    console.log(this.configService.get<string>("PORT")); // cách sử dụng env trong controller
+    return {
+      message: message
+    }
   }
 }
