@@ -3,13 +3,17 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
-@Controller('users')
+@Controller('users') // => /user
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  @Post("create") // => /user/eric
+  create(
+    @Body("email") email: string,
+    @Body("password") password: string,
+    @Body("fullName") fullName: string
+  ) {
+    return this.usersService.create(email, password, fullName);
   }
 
   @Get()
