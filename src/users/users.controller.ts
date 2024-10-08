@@ -27,10 +27,10 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
-  // [PATCH] /user/:id
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
+  // [PATCH] /user
+  @Patch()
+  update(@Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(updateUserDto);
   }
 
   // [DELETE] /user/:id
