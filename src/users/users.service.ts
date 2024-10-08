@@ -3,7 +3,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './schemas/user.schema';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 
 
@@ -17,6 +17,7 @@ export class UsersService {
     return hash;
   }
 
+  // [POST] /user
   async create(createUserDto: CreateUserDto) {
     // async create(email: string, password: string, fullName: string) {
     const hashPassword = this.handelPassword(createUserDto.password);
@@ -26,12 +27,19 @@ export class UsersService {
     return user;
   }
 
+  // [GET] /user
   findAll() {
     return `This action returns all users`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  // [GET] /user/:id
+  findOne(id: string) {
+    if (!mongoose.Types.ObjectId.isValid(id))
+      return "not found";
+
+    return this.userModel.findOne({
+      _id: id
+    });
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {
