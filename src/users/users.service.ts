@@ -20,10 +20,9 @@ export class UsersService {
 
   // [POST] /user
   async create(createUserDto: CreateUserDto) {
-    // async create(email: string, password: string, fullName: string) {
     const hashPassword = this.handelPassword(createUserDto.password);
     const user = await this.userModel.create({
-      email: createUserDto.email, password: hashPassword, fullName: createUserDto.fullName
+      email: createUserDto.email, password: hashPassword, name: createUserDto.name
     });
     return user;
   }

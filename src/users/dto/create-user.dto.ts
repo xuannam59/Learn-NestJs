@@ -13,6 +13,6 @@ export class CreateUserDto {
         { message: "Password không được để trống", }
     )
     password: string;
-    fullName: string;
+    name: string;
     address: string;
 }

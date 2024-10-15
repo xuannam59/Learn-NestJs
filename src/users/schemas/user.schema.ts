@@ -12,7 +12,7 @@ export class User {
     password: string;
 
     @Prop()
-    fullName: string;
+    name: string;
 
     @Prop()
     age: number;
