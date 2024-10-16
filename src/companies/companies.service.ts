@@ -5,6 +5,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Company, CompanyDocument } from './schemas/company.schemas';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
 import { IUser } from 'src/users/user.interface';
+import aqp from 'api-query-params';
+import { isEmpty } from 'class-validator';
 
 @Injectable()
 export class CompaniesService {
@@ -25,8 +27,38 @@ export class CompaniesService {
     return company;
   }
 
-  findAll() {
-    return `This action returns all companies`;
+  async findAll(currentPage: number, limit: number, qs: string) {
+    const { filter, projection, population } = aqp(qs);
+    delete filter.page;
+
+    let { sort } = aqp(qs);
+    let defaultLimit = limit ? limit : 10;
+
+    const totalItems = await this.companyModel.countDocuments(filter);
+    const totalPages = Math.ceil(totalItems / defaultLimit);
+    let offset = (currentPage - 1) * (defaultLimit);
+
+    // sắp xếp dữ liệu mới nhất
+    if (isEmpty(sort)) {
+      // @ts-ignore: Unreachable code error
+      sort = "-updatedAt"
+    }
+    const result = await this.companyModel.find(filter)
+      .skip(offset)
+      .limit(defaultLimit)
+      // @ts-ignore: Unreachable code error
+      .sort(sort)
+      .populate(population)
+      .exec();
+    return {
+      meta: {
+        currentPage: currentPage,//trang hiện tại
+        pageSize: limit, //số lượng bản ghi đã lấy
+        pages: totalPages, //tổng số trang với điều kiện query
+        total: totalItems // tổng số phần tử (số bản ghi)
+      },
+      result: result
+    };
   }
 
   findOne(id: number) {
