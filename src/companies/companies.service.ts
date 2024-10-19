@@ -28,26 +28,20 @@ export class CompaniesService {
   }
 
   async findAll(currentPage: number, limit: number, qs: string) {
-    const { filter, projection, population } = aqp(qs);
+    const { filter, sort, projection, population } = aqp(qs);
     delete filter.page;
 
-    let { sort } = aqp(qs);
+
     let defaultLimit = limit ? limit : 10;
 
     const totalItems = await this.companyModel.countDocuments(filter);
     const totalPages = Math.ceil(totalItems / defaultLimit);
     let offset = (currentPage - 1) * (defaultLimit);
 
-    // sắp xếp dữ liệu mới nhất
-    if (isEmpty(sort)) {
-      // @ts-ignore: Unreachable code error
-      sort = "-updatedAt"
-    }
     const result = await this.companyModel.find(filter)
       .skip(offset)
       .limit(defaultLimit)
-      // @ts-ignore: Unreachable code error
-      .sort(sort)
+      .sort(sort as any)
       .populate(population)
       .exec();
     return {
