@@ -1,16 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { User, UserDocument } from './schemas/user.schema';
+import { User as UserM, UserDocument } from './schemas/user.schema';
 import mongoose, { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
+import { IUser } from './user.interface';
+import aqp from 'api-query-params';
 
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: SoftDeleteModel<UserDocument>) { }
+  constructor(@InjectModel(UserM.name) private userModel: SoftDeleteModel<UserDocument>) { }
 
   handelPassword = (password: string) => {
     const salt = bcrypt.genSaltSync(10);
@@ -18,28 +20,100 @@ export class UsersService {
     return hash;
   }
 
-  // [POST] /user
-  async create(createUserDto: CreateUserDto) {
-    const hashPassword = this.handelPassword(createUserDto.password);
-    const user = await this.userModel.create({
-      email: createUserDto.email, password: hashPassword, name: createUserDto.name
+  // [POST] /auth/user
+  async register(user: RegisterUserDto) {
+    const { name, email, password, age, gender, address } = user
+
+    // logic check email
+    const isExist = await this.userModel.findOne({
+      email: email,
+      isDeleted: false
+    })
+    if (isExist) {
+      throw new BadRequestException(`Email: ${email} đã tồn tại trên hệ thống. vui lòng sử dụng email khác.`);
+    }
+
+    const hashPassword = this.handelPassword(password);
+    const newRegister = await this.userModel.create({
+      name,
+      email,
+      password: hashPassword,
+      age,
+      gender,
+      address,
+      role: "USER"
     });
-    return user;
+    return newRegister;
+  }
+
+  // [POST] /user
+  async create(createUserDto: CreateUserDto, user: IUser) {
+    const { name, email, password, age, gender, role, address, company } = createUserDto
+
+    // logic check email
+    const isExist = await this.userModel.findOne({
+      email: email,
+      isDeleted: false
+    })
+    if (isExist) {
+      throw new BadRequestException(`Email: ${email} đã tồn tại trên hệ thống. vui lòng sử dụng email khác.`);
+    }
+
+    const hashPassword = this.handelPassword(password);
+
+    const newUser = await this.userModel.create({
+      name, email,
+      password: hashPassword,
+      age,
+      gender,
+      address,
+      role,
+      company,
+      createdBy: {
+        _id: user._id,
+        email: user.email
+      }
+    });
+    return newUser;
   }
 
   // [GET] /user
-  findAll() {
-    return `This action returns all users`;
+  async findAll(currentPage: number, limit: number, qs: string) {
+    const { filter, sort, population } = aqp(qs)
+    delete filter.page;
+
+    let defaultLimit = limit ? limit : 10;
+
+    const totalItems = await this.userModel.countDocuments(filter);
+    const totalPages = Math.ceil(totalItems / defaultLimit);
+    let offset = (currentPage - 1) * (defaultLimit);
+
+    const result = await this.userModel.find(filter)
+      .skip(offset)
+      .limit(defaultLimit)
+      .sort(sort as any)
+      .populate(population)
+      .select("-password")
+      .exec();
+    return {
+      meta: {
+        currentPage: currentPage,
+        limit: defaultLimit,
+        totalItems: totalItems,
+        totalPage: totalPages
+      },
+      result: result
+    };
   }
 
   // [GET] /user/:id
-  findOne(id: string) {
+  async findOne(id: string) {
     if (!mongoose.Types.ObjectId.isValid(id))
       return "not found";
-
-    return this.userModel.findOne({
+    const user: any = await this.userModel.findOne({
       _id: id
-    });
+    }).select("-password");
+    return user;
   }
 
   async findOneByUsername(username: string) {
@@ -53,21 +127,45 @@ export class UsersService {
   }
 
   // [PATCH] /user
-  async update(updateUserDto: UpdateUserDto) {
-    return await this.userModel.updateOne({
-      _id: updateUserDto._id
-    }, {
-      ...updateUserDto
-    });
+  async update(updateUserDto: UpdateUserDto, user: IUser) {
+    const isExist = await this.userModel.findOne({
+      _id: updateUserDto._id,
+      isDeleted: false
+    })
+    if (!isExist) {
+      throw new BadRequestException("User không hợp lệ");
+    }
+    const updated = await this.userModel.updateOne(
+      { _id: updateUserDto._id },
+      {
+        ...updateUserDto,
+        updatedBy: {
+          _id: user._id,
+          email: user.email
+        }
+      })
+    return updated;
   }
 
   // [DELETE] /user/:id
-  remove(id: string) {
-    if (!mongoose.Types.ObjectId.isValid(id))
-      return "not found"
-
-    return this.userModel.softDelete({
+  async remove(id: string, user: IUser) {
+    const isExist = await this.userModel.findOne({
+      _id: id,
+      isDeleted: false
+    })
+    if (!isExist) {
+      throw new BadRequestException("User không hợp lệ");
+    }
+    await this.userModel.updateOne({
       _id: id
+    }, {
+      deletedBy: {
+        _id: user._id,
+        email: user.email
+      }
+    });
+    return this.userModel.softDelete({
+      _id: id,
     });
   }
 }
