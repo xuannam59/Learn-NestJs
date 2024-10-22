@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
-import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
+import { Response } from 'express';
+import ms from 'ms';
 import { RegisterUserDto } from 'src/users/dto/create-user.dto';
-import { User, UserDocument } from 'src/users/schemas/user.schema';
 import { IUser } from 'src/users/user.interface';
 import { UsersService } from 'src/users/users.service';
 
@@ -12,6 +13,7 @@ export class AuthService {
     constructor(
         private usersService: UsersService,
         private jwtService: JwtService,
+        private configService: ConfigService
     ) { }
     // username / password la 2 tham số thư viện passport nó ném về
     async validateUser(username: string, pass: string): Promise<any> {
@@ -25,7 +27,7 @@ export class AuthService {
         return null;
     }
 
-    async login(user: IUser) {
+    async login(user: IUser, response: Response) {
         const { _id, name, email, role } = user;
         const payload = {
             sub: "token login",
@@ -35,13 +37,33 @@ export class AuthService {
             email,
             role
         };
+
+        const refresh_token = this.createRefreshToken(payload);
+
+        // update user with refresh token
+        await this.usersService.updateRefreshToken(refresh_token, _id);
+
+        // 
+        response.cookie('refresh_token', refresh_token, {
+            httpOnly: true, //chỉ bên server mới đọc được , bền client không lấy ra đc
+            maxAge: ms(this.configService.get<string>("JWT_REFRESH_EXPIRE"))
+        })
+
         return {
             access_token: this.jwtService.sign(payload),
-            _id,
-            name,
-            email,
-            role
+            user: {
+                _id,
+                name,
+                email,
+                role
+            }
         };
+    }
+
+    async account(user: IUser) {
+        return {
+            user
+        }
     }
 
     async register(user: RegisterUserDto) {
@@ -50,5 +72,13 @@ export class AuthService {
             _id: newUser?._id,
             createAt: newUser?.createdAt
         };
+    }
+
+    createRefreshToken = (payload) => {
+        const refreshToken = this.jwtService.sign(payload, {
+            secret: this.configService.get<string>("JWT_REFRESH_TOKEN_SECRET"),
+            expiresIn: ms(this.configService.get<string>("JWT_REFRESH_EXPIRE")) / 1000
+        });
+        return refreshToken
     }
 }

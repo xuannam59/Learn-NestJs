@@ -1,8 +1,10 @@
-import { Body, Controller, Get, Post, Render, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { Public, ResponseMessage } from 'src/decorator/customize';
+import { Public, ResponseMessage, User } from 'src/decorator/customize';
 import { LocalAuthGuard } from './local-auth.guard';
 import { RegisterUserDto } from 'src/users/dto/create-user.dto';
+import { Response } from 'express';
+import { IUser } from 'src/users/user.interface';
 
 @Controller("auth")
 export class AuthController {
@@ -13,8 +15,19 @@ export class AuthController {
     @Public()
     @UseGuards(LocalAuthGuard)
     @Post("/login")
-    handleLogin(@Request() req) {
-        return this.authService.login(req.user);
+    handleLogin(
+        @Req() req,
+        @Res({ passthrough: true }) response: Response
+    ) {
+        return this.authService.login(req.user, response);
+    }
+
+    @Post("/account")
+    @ResponseMessage("Get user information")
+    handleGetAccount(
+        @User() user: IUser
+    ) {
+        return this.authService.account(user);
     }
 
     @Public() // Không cần chuyển JSW token
