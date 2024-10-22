@@ -61,6 +61,14 @@ export class AuthService {
         };
     }
 
+    // Logout
+    async logout(user: IUser, response: Response) {
+        await this.usersService.updateRefreshToken("", user._id);
+        response.clearCookie("refresh_token");
+        return "OK";
+    }
+
+    // Account
     async account(user: IUser) {
         return {
             user

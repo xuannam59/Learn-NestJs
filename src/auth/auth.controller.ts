@@ -12,6 +12,7 @@ export class AuthController {
         private authService: AuthService
     ) { }
 
+    // [POST] auth/login
     @Public()
     @UseGuards(LocalAuthGuard)
     @Post("/login")
@@ -22,6 +23,7 @@ export class AuthController {
         return this.authService.login(req.user, response);
     }
 
+    // [POST] auth/account
     @Post("/account")
     @ResponseMessage("Get user information")
     handleGetAccount(
@@ -30,6 +32,7 @@ export class AuthController {
         return this.authService.account(user);
     }
 
+    // [POST] auth/register
     @Public() // Không cần chuyển JSW token
     @ResponseMessage("Register a new user")
     @Post("/register")
@@ -37,6 +40,7 @@ export class AuthController {
         return this.authService.register(registerUserDto);
     }
 
+    // [GET] auth/refresh
     @Public()
     @ResponseMessage("Get user by refresh token")
     @Get("/refresh")
@@ -46,5 +50,15 @@ export class AuthController {
     ) {
         const refreshToken = request.cookies["refresh_token"];
         return this.authService.processNewToken(refreshToken, response)
+    }
+
+    // [POST] auth/logout
+    @ResponseMessage("Logout User")
+    @Post("/logout")
+    handleLogout(
+        @User() user: IUser,
+        @Res({ passthrough: true }) response: Response
+    ) {
+        return this.authService.logout(user, response);
     }
 }

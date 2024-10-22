@@ -24,6 +24,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         if (err || !user) {
             throw err || new UnauthorizedException("Token không hợp lệ or không có token ở Bearer Token ở Header request");
         }
-        return user;
+        return user; // req.user
     }
 }
