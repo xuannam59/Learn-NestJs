@@ -169,10 +169,16 @@ export class UsersService {
     });
   }
 
+  // update refresh token vào database
   updateRefreshToken = async (refreshToken: string, _id: string) => {
     return await this.userModel.updateOne(
       { _id },
       { refreshToken }
     )
+  }
+
+  // find user by refresh token
+  findUserByToken = async (refreshToken: string) => {
+    return await this.userModel.findOne({ refreshToken }).select("-password");
   }
 }
