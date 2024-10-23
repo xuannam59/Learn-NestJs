@@ -24,7 +24,7 @@ export class AuthController {
     }
 
     // [POST] auth/account
-    @Post("/account")
+    @Get("/account")
     @ResponseMessage("Get user information")
     handleGetAccount(
         @User() user: IUser
