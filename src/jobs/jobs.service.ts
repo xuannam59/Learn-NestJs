@@ -18,25 +18,25 @@ export class JobsService {
     const {
       name, skills, salary,
       company, quantity, level,
-      description, startDate, endDate, isActive } = createJobDto
+      description, startDate, endDate, isActive, location } = createJobDto
 
     const compareDate = dayjs(endDate).isAfter(startDate);
     if (!compareDate) {
       throw new BadRequestException("Ngày kết thuc phải sau ngày bắt đầu");
     }
 
-    const result = await this.jobModel.create({
+    const newJob = await this.jobModel.create({
       name, skills, salary,
       company, quantity, level,
-      description, startDate, endDate, isActive,
+      description, startDate, endDate, isActive, location,
       createdBy: {
         _id: user._id,
         email: user.email
       }
     })
     return {
-      _id: result._id,
-      createdAt: result.createdAt
+      _id: newJob._id,
+      createdAt: newJob.createdAt
     };
   }
 

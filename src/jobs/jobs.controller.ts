@@ -17,6 +17,7 @@ export class JobsController {
   }
 
   // [GET] /api/v1/jobs?current=1&pageSize=5
+  @Public()
   @ResponseMessage("Fetch jobs with pagination")
   @Get()
   findAll(
