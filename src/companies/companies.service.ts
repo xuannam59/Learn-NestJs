@@ -47,7 +47,7 @@ export class CompaniesService {
       .exec();
     return {
       meta: {
-        currentPage: currentPage,//trang hiện tại
+        current: currentPage,//trang hiện tại
         pageSize: limit, //số lượng bản ghi đã lấy
         pages: totalPages, //tổng số trang với điều kiện query
         total: totalItems // tổng số phần tử (số bản ghi)
@@ -56,8 +56,8 @@ export class CompaniesService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} company`;
+  async findOne(id: string) {
+    return await this.companyModel.findById(id);
   }
 
   // [PATCH] /companies/:id

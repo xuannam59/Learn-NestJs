@@ -45,7 +45,7 @@ export class User {
     isDeleted: Boolean;
 
     @Prop()
-    deleteAt: Date;
+    deletedAt: Date;
 
     @Prop({ type: Object })
     createdBy: {
