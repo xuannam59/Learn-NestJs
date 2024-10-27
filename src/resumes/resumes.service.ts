@@ -51,7 +51,7 @@ export class ResumesService {
 
   // [GET] /api/v1/resumes?current=1&pageSize=5
   async findAll(currentPage: number, pageSize: number, qs: string) {
-    const { filter, sort, population } = aqp(qs);
+    const { filter, sort, population, projection } = aqp(qs);
     delete filter.current;
     delete filter.pageSize;
 
@@ -68,6 +68,7 @@ export class ResumesService {
       .skip(offset)
       .sort(sort as any)
       .populate(population)
+      .select(projection as any)
       .exec();
     return {
       meta: {
