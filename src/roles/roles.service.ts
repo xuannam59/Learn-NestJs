@@ -74,11 +74,7 @@ export class RolesService {
 
     const role = await this.roleModel.findOne({
       _id: id,
-      isDeleted: false
-    }).populate({ path: "permissions", select: { _id: 1, apiPath: 1, name: 1, method: 1 } });
-
-    if (!role)
-      throw new NotFoundException("Không tìm thấy role này");
+    }).populate({ path: "permissions", select: { _id: 1, apiPath: 1, name: 1, method: 1, module: 1 } });
 
     return role;
   }
@@ -104,6 +100,11 @@ export class RolesService {
   async remove(id: string, user: IUser) {
     if (!mongoose.Types.ObjectId.isValid(id))
       throw new BadRequestException("id không hợp lệ");
+
+    const foundRole = await this.roleModel.findById(id);
+    if (foundRole.name === "ADMIN") {
+      throw new BadRequestException("Không thể xoá role ADMIN");
+    }
 
     await this.roleModel.updateOne(
       { _id: id },

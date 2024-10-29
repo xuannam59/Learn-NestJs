@@ -1,9 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto, RegisterUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User as UserM, UserDocument } from './schemas/user.schema';
-import mongoose, { Model } from 'mongoose';
+import mongoose from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
 import { IUser } from './user.interface';
@@ -110,17 +110,21 @@ export class UsersService {
   // [GET] /user/:id
   async findOne(id: string) {
     if (!mongoose.Types.ObjectId.isValid(id))
-      return "not found";
+      throw new BadRequestException("Không tìm thấy user")
+
     const user: any = await this.userModel.findOne({
       _id: id
-    }).select("-password");
+    })
+      .select("-password")
+      .populate({ path: "role", select: { name: 1, _id: 1 } });
     return user;
   }
 
   async findOneByUsername(username: string) {
     return this.userModel.findOne({
       email: username
-    });
+    }).
+      populate({ path: "role", select: { name: 1, permissions: 1 } });
   }
 
   isValidPassword(password: string, hashPassword: string) {
@@ -150,13 +154,15 @@ export class UsersService {
 
   // [DELETE] /user/:id
   async remove(id: string, user: IUser) {
-    const isExist = await this.userModel.findOne({
-      _id: id,
-      isDeleted: false
-    })
-    if (!isExist) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       throw new BadRequestException("User không hợp lệ");
     }
+
+    const foundUser = await this.userModel.findById(id)
+    if (foundUser.email === "admin@gmail.com") {
+      throw new BadRequestException("Không thể xoá tài khoản admin");
+    }
+
     await this.userModel.updateOne({
       _id: id
     }, {

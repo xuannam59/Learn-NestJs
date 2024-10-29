@@ -10,6 +10,7 @@ import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Get data .env
   const configService = app.get(ConfigService);
 
   const reflector = app.get(Reflector);
