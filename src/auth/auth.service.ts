@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Response } from 'express';
 import ms from 'ms';
+import { RolesService } from 'src/roles/roles.service';
 import { RegisterUserDto } from 'src/users/dto/create-user.dto';
 import { IUser } from 'src/users/user.interface';
 import { UsersService } from 'src/users/users.service';
@@ -13,7 +14,8 @@ export class AuthService {
     constructor(
         private usersService: UsersService,
         private jwtService: JwtService,
-        private configService: ConfigService
+        private configService: ConfigService,
+        private rolesService: RolesService
     ) { }
     // username / password la 2 tham số thư viện passport nó ném về
     async validateUser(username: string, pass: string): Promise<any> {
@@ -21,7 +23,14 @@ export class AuthService {
         if (user) {
             const isValid = this.usersService.isValidPassword(pass, user.password);
             if (isValid) {
-                return user;
+                const userRole = user.role as unknown as { _id: string, name: string }
+                const temp = await this.rolesService.findOne(userRole._id);
+
+                const objectUser = {
+                    ...user.toObject(), // convert type Document of MongoDB to type Object
+                    permissions: temp?.permissions ?? []
+                }
+                return objectUser;
             }
         }
         return null;
@@ -29,7 +38,7 @@ export class AuthService {
 
     // Login
     async login(user: IUser, response: Response) {
-        const { _id, name, email, role } = user;
+        const { _id, name, email, role, permissions } = user;
         const payload = {
             sub: "token login",
             iss: "from server",
@@ -56,7 +65,8 @@ export class AuthService {
                 _id,
                 name,
                 email,
-                role
+                role,
+                permissions: permissions
             }
         };
     }
@@ -70,14 +80,18 @@ export class AuthService {
 
     // Account
     async account(user: IUser) {
+        // fetch user's role
+        const userRole = user.role as unknown as { _id: string, name: string }
+        const temp = await this.rolesService.findOne(userRole._id);
         return {
-            user
+            user,
+            permissions: temp?.permissions ?? []
         }
     }
 
     // register 
-    async register(user: RegisterUserDto) {
-        const newUser = await this.usersService.register(user);
+    async register(RegisterUserDto: RegisterUserDto) {
+        const newUser = await this.usersService.register(RegisterUserDto);
         return {
             _id: newUser?._id,
             createAt: newUser?.createdAt
@@ -114,6 +128,9 @@ export class AuthService {
 
                 const refresh_token = this.createRefreshToken(payload);
 
+                // fetch user's role
+                const userRole = user.role as unknown as { _id: string, name: string }
+                const temp = await this.rolesService.findOne(userRole._id);
                 // update refreshToken in database
                 this.usersService.updateRefreshToken(refresh_token, _id.toString());
                 // delete refresh_token cookie current
@@ -130,7 +147,8 @@ export class AuthService {
                         _id,
                         name,
                         email,
-                        role
+                        role,
+                        permissions: temp?.permissions ?? []
                     }
                 }
             } else {
