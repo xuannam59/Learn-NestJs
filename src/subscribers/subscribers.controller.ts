@@ -3,7 +3,7 @@ import { SubscribersService } from './subscribers.service';
 import { CreateSubscriberDto } from './dto/create-subscriber.dto';
 import { UpdateSubscriberDto } from './dto/update-subscriber.dto';
 import { IUser } from 'src/users/user.interface';
-import { ResponseMessage, User } from 'src/decorator/customize';
+import { ResponseMessage, SkipCheckPermission, User } from 'src/decorator/customize';
 
 @Controller('subscribers')
 export class SubscribersController {
@@ -30,6 +30,14 @@ export class SubscribersController {
     return this.subscribersService.findAll(+currentPage, +pageSize, qs);
   }
 
+  // [GET] /api/v1/subscribers/skills
+  @Post("skills")
+  @SkipCheckPermission()
+  @ResponseMessage("Get subscriber's skill")
+  getUserSkills(@User() user: IUser) {
+    return this.subscribersService.getSkills(user);
+  }
+
   // [GET] /api/v1/subscribers/:id
   @Get(':id')
   @ResponseMessage("Fetch a subscriber by id")
@@ -38,14 +46,14 @@ export class SubscribersController {
   }
 
   // [PATCH] /api/v1/subscribers/:id
-  @Patch(':id')
+  @Patch()
+  @SkipCheckPermission()
   @ResponseMessage("Update subscriber by id")
   update(
-    @Param('id') id: string,
     @Body() updateSubscriberDto: UpdateSubscriberDto,
     @User() user: IUser
   ) {
-    return this.subscribersService.update(id, updateSubscriberDto, user);
+    return this.subscribersService.update(updateSubscriberDto, user);
   }
 
   // [DELETE] /api/v1/subscribers/:id

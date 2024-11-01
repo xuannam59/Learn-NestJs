@@ -67,6 +67,10 @@ export class SubscribersService {
     };
   }
 
+  async getSkills(user: IUser) {
+    return await this.subscriberModel.findOne({ email: user.email }).select("skills");
+  }
+
   // [GET] /api/v1/subscribers/:id
   async findOne(id: string) {
     if (!mongoose.Types.ObjectId.isValid(id))
@@ -81,22 +85,18 @@ export class SubscribersService {
   }
 
   // [PATCH] /api/v1/subscribers/:id
-  async update(id: string, updateSubscriberDto: UpdateSubscriberDto, user: IUser) {
-    if (!mongoose.Types.ObjectId.isValid(id))
-      throw new BadRequestException("Id không hợp lệ");
-
-    const subscriber = await this.subscriberModel.findOne({ _id: id });
-    if (!subscriber)
-      throw new NotFoundException("Không tìm thấy subscriber");
-
+  async update(updateSubscriberDto: UpdateSubscriberDto, user: IUser) {
     return await this.subscriberModel.updateOne(
-      { _id: id },
+      { email: user.email },
       {
         ...updateSubscriberDto,
         updatedBy: {
           _id: user?._id,
           email: user?.email
         }
+      },
+      {
+        upsert: true // update and insert nếu chưa có record thì tạo bản record
       }
     );
   }
