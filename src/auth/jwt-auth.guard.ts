@@ -39,9 +39,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         )
 
         if (targetEndpoint.startsWith("/api/v1/auth")) isExist = true;
-        if (!isExist) {
-            throw new ForbiddenException("Bạn không có quyền truy cập endpoint này!");
-        }
+        // if (!isExist) {
+        //     throw new ForbiddenException("Bạn không có quyền truy cập endpoint này!");
+        // }
 
         return user; // req.user
     }
