@@ -165,7 +165,7 @@ export class UsersService {
     }
 
     const foundUser = await this.userModel.findById(id)
-    if (foundUser.email === "admin@gmail.com") {
+    if (foundUser && foundUser.email === "admin@gmail.com") {
       throw new BadRequestException("Không thể xoá tài khoản admin");
     }
 
@@ -192,6 +192,7 @@ export class UsersService {
 
   // find user by refresh token
   findUserByToken = async (refreshToken: string) => {
-    return await this.userModel.findOne({ refreshToken }).select("-password");
+    return await this.userModel.findOne({ refreshToken })
+      .populate({ path: "role", select: { name: 1 } });
   }
 }
