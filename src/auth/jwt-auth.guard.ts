@@ -28,18 +28,19 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
             throw err || new UnauthorizedException("Token không hợp lệ or không có token ở Bearer Token ở Header request");
         }
         const targetMethod = request.method;
-        const targetEndpoint = request.route?.path;
+        const targetEndpoint = request.route?.path as string;
 
         const permissions = user?.permissions ?? [];
 
-        const isExist = permissions.find(permission =>
+        let isExist = permissions.find(permission =>
             targetMethod === permission.method
             &&
             targetEndpoint === permission.apiPath
         )
 
+        if (targetEndpoint.startsWith("/api/v1/auth")) isExist = true;
         if (!isExist) {
-            throw new ForbiddenException("Bạn không có quyền truy cập api này!");
+            throw new ForbiddenException("Bạn không có quyền truy cập endpoint này!");
         }
 
         return user; // req.user
