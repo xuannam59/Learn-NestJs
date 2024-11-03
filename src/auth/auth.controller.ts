@@ -5,6 +5,7 @@ import { LocalAuthGuard } from './local-auth.guard';
 import { RegisterUserDto } from 'src/users/dto/create-user.dto';
 import { Request, Response } from 'express';
 import { IUser } from 'src/users/user.interface';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 @Controller("auth")
 export class AuthController {
@@ -15,7 +16,10 @@ export class AuthController {
     // [POST] auth/login
     @Public()
     @UseGuards(LocalAuthGuard)
+    @UseGuards(ThrottlerGuard) // rate limit call api
+    @Throttle({ default: { limit: 5, ttl: 60000 } }) // override default
     @Post("/login")
+    @ResponseMessage("Get user information")
     handleLogin(
         @Req() req,
         @Res({ passthrough: true }) response: Response
