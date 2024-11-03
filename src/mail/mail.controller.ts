@@ -2,11 +2,11 @@ import { Controller, Get } from '@nestjs/common';
 import { MailService } from './mail.service';
 import { Public, ResponseMessage } from 'src/decorator/customize';
 import { MailerService } from '@nestjs-modules/mailer';
-import { name } from 'ejs';
 import { InjectModel } from '@nestjs/mongoose';
 import { Subscriber, SubscriberDocument } from 'src/subscribers/schemas/subscriber.schema';
 import { SoftDeleteModel } from 'soft-delete-plugin-mongoose';
 import { Job, JobDocument } from 'src/jobs/schemas/job.schema';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Controller('mail')
 export class MailController {
@@ -21,9 +21,21 @@ export class MailController {
     private jobModel: SoftDeleteModel<JobDocument>,
   ) { }
 
+
+
+
   @Get()
   @Public()
   @ResponseMessage("Test email")
+  @Cron('0 0 0 * * 0') // 0.10' ar every sunday
+  //     * * * * * *
+  //     | | | | | |
+  //     | | | | | day of week (0-6)
+  //     | | | | months(0-11)
+  //     | | | day of month
+  //     | | hours (0-23)
+  //     | minutes (0-59)
+  //     seconds (optional) (0-59)
   async handleTestEmail() {
     const subscribers = await this.subscriberModel.find({})
     for (const subs of subscribers) {
@@ -50,6 +62,6 @@ export class MailController {
         });
       }
     }
-
+    console.log("Sent mail")
   }
 }
